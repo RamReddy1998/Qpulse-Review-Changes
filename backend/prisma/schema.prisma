@@ -1,0 +1,229 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  LEARNER
+  ADMIN
+}
+
+enum LearningType {
+  BATCH
+  SELF
+}
+
+model User {
+  id           String       @id @default(uuid())
+  username     String       @unique
+  passwordHash String       @map("password_hash")
+  role         Role         @default(LEARNER)
+  learningType LearningType @default(SELF) @map("learning_type")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  sessions            Session[]
+  mockTests           MockTest[]
+  mistakeLogs         MistakeLog[]
+  readinessScores     ReadinessScore[]
+  batchParticipants   BatchParticipant[]
+  learnerActivityLogs LearnerActivityLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  refreshToken String   @map("refresh_token")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Certification {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String    @default("")
+  examDate    DateTime? @map("exam_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  questions       Question[]
+  mockTests       MockTest[]
+  batches         Batch[]
+  readinessScores ReadinessScore[]
+
+  @@map("certifications")
+}
+
+model Question {
+  id              String   @id @default(uuid())
+  certificationId String   @map("certification_id")
+  questionText    String   @map("question_text")
+
+  questionHash    String   @unique @map("question_hash") // prevent duplicates
+
+  options         Json
+  correctAnswer   String   @map("correct_answer")
+  difficulty      String   @default("medium")
+  topic           String   @default("")
+  source          String   @default("seed")
+
+  deletedAt       DateTime? @map("deleted_at") // soft delete
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  certification Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+
+  mockTestAttempts   MockTestAttempt[]
+  mistakeLogs        MistakeLog[]
+  learnerActivityLogs LearnerActivityLog[]
+
+  @@index([certificationId])
+  @@index([topic])
+  @@index([difficulty])
+  @@index([certificationId, topic])
+  @@index([certificationId, difficulty])
+
+  @@map("questions")
+}
+
+model MockTest {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  mockName        String    @map("mock_name")
+  certificationId String    @map("certification_id")
+  totalScore      Float     @default(0) @map("total_score")
+  startedAt       DateTime  @default(now()) @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certification Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+
+  attempts MockTestAttempt[]
+
+  @@index([userId])
+  @@index([certificationId])
+
+  @@map("mock_tests")
+}
+
+model MockTestAttempt {
+  id           String  @id @default(uuid())
+  mockTestId   String  @map("mock_test_id")
+  questionId   String  @map("question_id")
+  userAnswer   String  @default("") @map("user_answer")
+  isCorrect    Boolean @default(false) @map("is_correct")
+  timeSpentSec Int     @default(0) @map("time_spent_sec")
+
+  mockTest MockTest @relation(fields: [mockTestId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([mockTestId])
+  @@index([questionId])
+
+  @@map("mock_test_attempts")
+}
+
+model MistakeLog {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  questionId      String   @map("question_id")
+  mistakeCount    Int      @default(1) @map("mistake_count")
+  lastAttemptedAt DateTime @default(now()) @map("last_attempted_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId])
+  @@map("mistake_logs")
+}
+
+model ReadinessScore {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  certificationId String?  @map("certification_id")
+  score           Float    @default(0)
+  status          String   @default("not_ready")
+  calculatedAt    DateTime @default(now()) @map("calculated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certification Certification? @relation(fields: [certificationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([certificationId])
+
+  @@map("readiness_scores")
+}
+
+model Batch {
+  id              String    @id @default(uuid())
+  batchName       String    @map("batch_name")
+  certificationId String    @map("certification_id")
+  startTime       DateTime? @map("start_time")
+  endTime         DateTime? @map("end_time")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  certification Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  participants  BatchParticipant[]
+
+  @@index([certificationId])
+
+  @@map("batches")
+}
+
+model BatchParticipant {
+  id       String   @id @default(uuid())
+  batchId  String   @map("batch_id")
+  userId   String   @map("user_id")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, userId])
+
+  @@map("batch_participants")
+}
+
+model LearnerActivityLog {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  questionId   String   @map("question_id")
+  timeSpentSec Int      @default(0) @map("time_spent_sec")
+  isCorrect    Boolean  @default(false) @map("is_correct")
+  topic        String   @default("")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([questionId])
+  @@index([userId, createdAt])
+
+  @@map("learner_activity_logs")
+}
+
+model AiResponseCache {
+  id         String   @id @default(uuid())
+  questionId String   @map("question_id")
+  promptType String   @map("prompt_type")
+  response   Json
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([questionId, promptType])
+
+  @@map("ai_response_cache")
+}
