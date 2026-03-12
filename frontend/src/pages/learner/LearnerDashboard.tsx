@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { certificationService } from '../../services/certification.service';
@@ -85,7 +86,7 @@ export function LearnerDashboard() {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-          {(user?.role === 'ADMIN' || user?.role?.toUpperCase() === 'ADMIN') ? 'Certification Management' : 'Learner Dashboard'}
+          {(user?.role === 'ADMIN' || user?.role?.toUpperCase() === 'ADMIN') ? 'Certification Management' : 'Dashboard'}
           {(user?.role === 'ADMIN' || user?.role?.toUpperCase() === 'ADMIN') && (
             <span className="px-3 py-1 bg-red-500 text-white text-[12px] rounded-full font-black uppercase shadow-lg animate-pulse">ADMIN ACCESS ENABLED</span>
           )}
@@ -101,63 +102,75 @@ export function LearnerDashboard() {
         </div>
       )}
 
-      {/* Stats Grid - Hide for Admin */}
-      {user?.role?.toUpperCase() !== 'ADMIN' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="card">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Award className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Certifications</p>
-                <p className="text-2xl font-bold text-gray-900">{certifications.length}</p>
-              </div>
-            </div>
+         {/* Stats Grid - Hide for Admin */}
+     {user?.role?.toUpperCase() !== 'ADMIN' && (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    
+    {/* Card 1: Platform Statistics */}
+    <div className="card p-6">
+      <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Platform Statistics</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Certifications */}
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Award className="h-6 w-6 text-blue-600" />
           </div>
-
-          <div className="card">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <BookOpen className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Total Questions</p>
-                <p className="text-2xl font-bold text-gray-900">{totalQuestions}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <FileCheck className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Mock Tests</p>
-                <p className="text-2xl font-bold text-gray-900">{mockCount}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                <Target className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Readiness Score</p>
-                <p className="text-2xl font-bold text-gray-900">{readiness?.score || 0}%</p>
-              </div>
-            </div>
-            {readiness && (
-              <span className={`mt-2 inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(readiness.status)}`}>
-                {readiness.status.replace(/_/g, ' ')}
-              </span>
-            )}
+          <div>
+            <p className="text-sm text-gray-500">Certifications</p>
+            <p className="text-2xl font-bold text-gray-900">{certifications.length}</p>
           </div>
         </div>
-      )}
+
+        {/* Total Questions */}
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <BookOpen className="h-6 w-6 text-purple-600" />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Total Questions</p>
+            <p className="text-2xl font-bold text-gray-900">{totalQuestions}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Card 2: User Statistics */}
+    <div className="card p-6">
+      <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">User Statistics</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Mock Tests */}
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <FileCheck className="h-6 w-6 text-green-600" />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Mock Tests</p>
+            <p className="text-2xl font-bold text-gray-900">{mockCount}</p>
+          </div>
+        </div>
+
+        {/* Readiness Score */}
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Target className="h-6 w-6 text-orange-600" />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Readiness Score</p>
+            <div className="flex flex-col">
+              <p className="text-2xl font-bold text-gray-900">{readiness?.score || 0}%</p>
+              {readiness && (
+                <span className={`mt-1 inline-block px-2 py-0.5 rounded-full text-[10px] font-medium w-fit ${getStatusColor(readiness.status)}`}>
+                  {readiness.status.replace(/_/g, ' ')}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+)}
 
       {/* Certifications */}
       <div className="mb-8">
